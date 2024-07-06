@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">VideoApp</string>
+    <string name="btncaptura">Capturar video\n</string>
+    <string name="btnguardar">Guardar</string>
+</resources>
