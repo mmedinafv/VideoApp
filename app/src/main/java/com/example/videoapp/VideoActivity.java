@@ -9,6 +9,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.MediaController;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -51,7 +52,7 @@ public class VideoActivity extends AppCompatActivity {
 
         btnCaptura=findViewById(R.id.btnCaptura);
         btnGuardar=findViewById(R.id.btnGuardar);
-        videoView = findViewById(R.id.videoView);
+
 
         btnCaptura.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,48 +90,58 @@ public class VideoActivity extends AppCompatActivity {
     private void recordVideo() {
         Intent record = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         if (record.resolveActivity(getPackageManager()) != null) {
-            File videoFile = null;
-            try {
-                videoFile = createVideoFile();
-            } catch (IOException ex) {
-            }
-            if (videoFile != null) {
-                videoURI = FileProvider.getUriForFile(this,
-                        "com.example.pm0120242p.fileprovider",
-                        videoFile);
-                record.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
-                Log.i("Video path", currentVideoPath);
-                startActivityForResult(record, peticion_captura_video);
-            }
-    }
+            startActivityForResult(record, peticion_captura_video);
         }
+    }
 
     @Override
+
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == peticion_captura_video && resultCode == RESULT_OK){
-            if(data != null){
+        if (requestCode == peticion_captura_video && resultCode == RESULT_OK) {
+            if (data != null) {
+                Uri videoUri = data.getData();
+                currentVideoPath = videoUri.getPath();
+                Toast.makeText(getApplicationContext(), "¡El video ha sido grabado! ", Toast.LENGTH_LONG).show();
+                Log.i("Video path", currentVideoPath);
+                videoView = findViewById(R.id.videoView);
+                videoView.setVideoURI(videoUri);
+                MediaController media=new MediaController(this);
+                media.setAnchorView(videoView);
+                media.setPadding(0,0,0,520);
+                videoView.setMediaController(media);
+                videoView.start();
             }
         }
     }
+
 
     private File createVideoFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String videoFileName = "MP4_" + timeStamp + "_";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
-        File video = File.createTempFile(
-                videoFileName,  /* prefix */
-                ".mp4",         /* suffix */
-                storageDir      /* directory */
-        );
-
+        File video = File.createTempFile(videoFileName, ".mp4", storageDir);
         currentVideoPath = video.getAbsolutePath();
         return video;
     }
 
+
+
     private void save() {
-                Toast.makeText(this, "Video guardado en: " + currentVideoPath, Toast.LENGTH_LONG).show();
-            }
+        try {
+            File videoFile = createVideoFile();
+            Uri videoURI = FileProvider.getUriForFile(this, "com.example.videoapp.fileprovider", videoFile);
+            Log.i("Save Video", "Video guardado en: " + videoURI.getPath());
+            Toast.makeText(getApplicationContext(), "Video guardado en: " + videoURI.getPath(), Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getApplicationContext(), "Error al guardar el video", Toast.LENGTH_LONG).show();
+        }
     }
+
+
+}
+
+
 
 

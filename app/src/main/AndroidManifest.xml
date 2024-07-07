@@ -29,7 +29,7 @@
         <!-- Declare Content Provider-->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.pm0120242p.fileprovider"
+            android:authorities="com.example.videoapp.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
