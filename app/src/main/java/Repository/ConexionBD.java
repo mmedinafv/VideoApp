@@ -13,12 +13,13 @@ public class ConexionBD extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onCreate(SQLiteDatabase sqLiteDatabase) {
-
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL(Trans.CREATE_TABLE);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
-
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL(Trans.DELETE_TABLE);
+        onCreate(db);
     }
 }

@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import Repository.Trans;
+import Repository.ConexionBD;
 
 
 public class VideoActivity extends AppCompatActivity {
@@ -38,7 +40,7 @@ public class VideoActivity extends AppCompatActivity {
     String currentVideoPath;
     Button btnCaptura, btnGuardar;
     VideoView videoView;
-    Uri videoURI;
+    Repository.ConexionBD conexion;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,9 +52,9 @@ public class VideoActivity extends AppCompatActivity {
             return insets;
         });
 
+        conexion = new ConexionBD(this,Trans.db_name, null, Trans.VERSION);
         btnCaptura=findViewById(R.id.btnCaptura);
         btnGuardar=findViewById(R.id.btnGuardar);
-
 
         btnCaptura.setOnClickListener(new View.OnClickListener() {
             @Override
