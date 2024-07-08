@@ -1,11 +1,14 @@
 package com.example.videoapp;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -24,7 +27,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -106,6 +111,8 @@ public class VideoActivity extends AppCompatActivity {
                 currentVideoPath = videoUri.getPath();
                 Toast.makeText(getApplicationContext(), "¡El video ha sido grabado! ", Toast.LENGTH_LONG).show();
                 Log.i("Video path", currentVideoPath);
+
+
                 videoView = findViewById(R.id.videoView);
                 videoView.setVideoURI(videoUri);
                 MediaController media=new MediaController(this);
@@ -113,9 +120,11 @@ public class VideoActivity extends AppCompatActivity {
                 media.setPadding(0,0,0,520);
                 videoView.setMediaController(media);
                 videoView.start();
+
             }
         }
     }
+
 
 
     private File createVideoFile() throws IOException {
@@ -132,17 +141,51 @@ public class VideoActivity extends AppCompatActivity {
     private void save() {
         try {
             File videoFile = createVideoFile();
+
             Uri videoURI = FileProvider.getUriForFile(this, "com.example.videoapp.fileprovider", videoFile);
             Log.i("Save Video", "Video guardado en: " + videoURI.getPath());
             Toast.makeText(getApplicationContext(), "Video guardado en: " + videoURI.getPath(), Toast.LENGTH_LONG).show();
+
+            String videoBase64 = convertVideoToBase64(videoFile);
+            Log.i("Video Base64", "Video en Base64: " + videoBase64);
+            saveVideoToDatabase(videoBase64);
+
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(getApplicationContext(), "Error al guardar el video", Toast.LENGTH_LONG).show();
         }
     }
 
+    private String convertVideoToBase64(File videoFile) throws IOException {
+        FileInputStream videoStream = new FileInputStream(videoFile);
+        ByteArrayOutputStream videoByte = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        while ((bytesRead = videoStream.read(buffer)) != -1) {
+            videoByte.write(buffer, 0, bytesRead);
+        }
+        videoStream.close();
+        byte[] videoBytes = videoByte.toByteArray();
+        String b64Video = Base64.encodeToString(videoBytes, Base64.DEFAULT);
+        Log.d("VideoConversion", "Conversion completa. Longitud de Base64: " + b64Video.length());
+
+        return b64Video;
+    }
+
+
+    private void saveVideoToDatabase(String videoBase64) {
+        ConexionBD db = new ConexionBD(this, Trans.db_name, null, Trans.VERSION);
+        SQLiteDatabase database = db.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(Trans.VIDEO, videoBase64);
+        long newRowId = database.insert(Trans.TBL_VIDEO, null, values);
+        database.close();
+    }
+
+
 
 }
+
 
 
 

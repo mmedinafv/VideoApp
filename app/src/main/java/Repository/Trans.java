@@ -1,6 +1,5 @@
 package Repository;
 
-import kotlin.text.UStringsKt;
 
 public class Trans {
 
