@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,12 +26,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.io.ByteArrayOutputStream;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
 import Repository.Trans;
 import Repository.ConexionBD;
 
@@ -42,10 +41,10 @@ public class VideoActivity extends AppCompatActivity {
     static final int peticion_acceso_camara = 101;
     static final int peticion_captura_video = 103;
 
+    VideoView videoView;
     String currentVideoPath;
     Button btnCaptura, btnGuardar;
-    VideoView videoView;
-    Repository.ConexionBD conexion;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,9 +56,8 @@ public class VideoActivity extends AppCompatActivity {
             return insets;
         });
 
-        conexion = new ConexionBD(this,Trans.db_name, null, Trans.VERSION);
-        btnCaptura=findViewById(R.id.btnCaptura);
-        btnGuardar=findViewById(R.id.btnGuardar);
+        btnCaptura = findViewById(R.id.btnCaptura);
+        btnGuardar = findViewById(R.id.btnGuardar);
 
         btnCaptura.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -76,19 +74,19 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void permisos() {
-        if(ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, peticion_acceso_camara);
-        }else{
+        } else {
             recordVideo();
         }
     }
 
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode == peticion_acceso_camara){
-            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+        if (requestCode == peticion_acceso_camara) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 recordVideo();
-            }else{
+            } else {
                 Toast.makeText(getApplicationContext(), "Acceso denegado", Toast.LENGTH_LONG).show();
             }
         }
@@ -112,19 +110,16 @@ public class VideoActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "¡El video ha sido grabado! ", Toast.LENGTH_LONG).show();
                 Log.i("Video path", currentVideoPath);
 
-
                 videoView = findViewById(R.id.videoView);
                 videoView.setVideoURI(videoUri);
-                MediaController media=new MediaController(this);
+                MediaController media = new MediaController(this);
                 media.setAnchorView(videoView);
-                media.setPadding(0,0,0,520);
                 videoView.setMediaController(media);
                 videoView.start();
 
             }
         }
     }
-
 
 
     private File createVideoFile() throws IOException {
@@ -137,18 +132,23 @@ public class VideoActivity extends AppCompatActivity {
     }
 
 
-
     private void save() {
         try {
             File videoFile = createVideoFile();
 
-            Uri videoURI = FileProvider.getUriForFile(this, "com.example.videoapp.fileprovider", videoFile);
+            Uri videoURI = FileProvider.getUriForFile(this,
+                    "com.example.videoapp.fileprovider",
+                    videoFile);
             Log.i("Save Video", "Video guardado en: " + videoURI.getPath());
             Toast.makeText(getApplicationContext(), "Video guardado en: " + videoURI.getPath(), Toast.LENGTH_LONG).show();
 
-            String videoBase64 = convertVideoToBase64(videoFile);
-            Log.i("Video Base64", "Video en Base64: " + videoBase64);
-            saveVideoToDatabase(videoBase64);
+            if (videoFile != null && videoFile.exists()) {
+                saveVideoToDatabase(videoURI.getPath());
+                Log.i("Save Video", "Video guardado en la base de datos." + videoURI.getPath());
+            } else {
+                Log.e("Save Video", "El archivo de video no existe.");
+                Toast.makeText(getApplicationContext(), "Error: El archivo de video no existe.", Toast.LENGTH_LONG).show();
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -156,34 +156,15 @@ public class VideoActivity extends AppCompatActivity {
         }
     }
 
-    private String convertVideoToBase64(File videoFile) throws IOException {
-        FileInputStream videoStream = new FileInputStream(videoFile);
-        ByteArrayOutputStream videoByte = new ByteArrayOutputStream();
-        byte[] buffer = new byte[8192];
-        int bytesRead;
-        while ((bytesRead = videoStream.read(buffer)) != -1) {
-            videoByte.write(buffer, 0, bytesRead);
-        }
-        videoStream.close();
-        byte[] videoBytes = videoByte.toByteArray();
-        String b64Video = Base64.encodeToString(videoBytes, Base64.DEFAULT);
-        Log.d("VideoConversion", "Conversion completa. Longitud de Base64: " + b64Video.length());
-
-        return b64Video;
-    }
-
-
-    private void saveVideoToDatabase(String videoBase64) {
+    private void saveVideoToDatabase(String videoFilePath) {
         ConexionBD db = new ConexionBD(this, Trans.db_name, null, Trans.VERSION);
         SQLiteDatabase database = db.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(Trans.VIDEO, videoBase64);
+        values.put(Trans.VIDEO, videoFilePath);
         long newRowId = database.insert(Trans.TBL_VIDEO, null, values);
+        Log.i("Save Video", "Video guardado en la base de datos con id: " + newRowId);
         database.close();
     }
-
-
-
 }
 
 
